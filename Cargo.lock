@@ -205,7 +205,7 @@ dependencies = [
 [[package]]
 name = "idb-parser"
 version = "0.1.0"
-source = "git+https://github.com/Vector35/idb-parser-rs.git#19d049410a85d8e9894a3ec9dd1178fe11ccd412"
+source = "git+https://github.com/Vector35/idb-parser-rs.git#c812f733893e80debee01280ad5ffe3fda07a297"
 dependencies = [
  "binrw",
  "miniz_oxide",
