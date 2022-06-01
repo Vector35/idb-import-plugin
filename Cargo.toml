@@ -1,5 +1,5 @@
 [package]
-name = "idb-parser-plugin"
+name = "idb-import-plugin"
 version = "0.1.0"
 edition = "2021"
 

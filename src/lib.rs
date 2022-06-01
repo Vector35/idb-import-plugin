@@ -465,7 +465,7 @@ impl Command for TILImport {
 }
 
 #[no_mangle]
-pub extern "C" fn UIPluginInit() -> bool {
+pub extern "C" fn CorePluginInit() -> bool {
     logger::init(log::LevelFilter::Debug);
     DebugInfoParser::register("IDB Parser", IDBParser {});
     DebugInfoParser::register("TIL Parser", TILParser {});

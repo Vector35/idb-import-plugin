@@ -194,21 +194,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a3a5bfb195931eeb336b2a7b4d761daec841b97f947d34394601737a7bba5e4"
 
 [[package]]
+name = "idb-import-plugin"
+version = "0.1.0"
+dependencies = [
+ "binaryninja",
+ "idb-parser",
+ "log",
+]
+
+[[package]]
 name = "idb-parser"
 version = "0.1.0"
 source = "git+https://github.com/Vector35/idb-parser-rs.git#19d049410a85d8e9894a3ec9dd1178fe11ccd412"
 dependencies = [
  "binrw",
  "miniz_oxide",
-]
-
-[[package]]
-name = "idb-parser-plugin"
-version = "0.1.0"
-dependencies = [
- "binaryninja",
- "idb-parser",
- "log",
 ]
 
 [[package]]
