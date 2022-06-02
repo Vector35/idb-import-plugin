@@ -19,6 +19,10 @@ set(OUTPUT_PATH ${BN_CORE_PLUGIN_DIR}/${OUTPUT_FILE})
 
 add_custom_target(idb_import_plugin ALL DEPENDS ${OUTPUT_PATH})
 
+if (BN_INTERNAL_BUILD)
+    add_dependencies(idb_import_plugin binaryninjacore)
+endif()
+
 find_program(RUSTUP_PATH rustup REQUIRED HINTS ~/.cargo/bin)
 set(RUSTUP_COMMAND ${RUSTUP_PATH} run ${CARGO_STABLE_VERSION} cargo build)
 
