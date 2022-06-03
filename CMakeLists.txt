@@ -18,11 +18,10 @@ set(OUTPUT_FILE ${CMAKE_SHARED_LIBRARY_PREFIX}idb_import_plugin${CMAKE_SHARED_LI
 set(OUTPUT_PATH ${BN_CORE_PLUGIN_DIR}/${OUTPUT_FILE})
 
 add_custom_target(idb_import_plugin ALL DEPENDS ${OUTPUT_PATH})
-
-if (BN_INTERNAL_BUILD)
-    add_dependencies(idb_import_plugin binaryninjacore)
-    set($ENV{BINARYNINJADIR} $<TARGET_FILE_DIR:binaryninjacore>)
-endif()
+add_dependencies(idb_import_plugin binaryninjaapi)
+get_target_property(BN_API_SOURCE_DIR binaryninjaapi SOURCE_DIR)
+list(APPEND CMAKE_MODULE_PATH "${BN_API_SOURCE_DIR}/cmake")
+find_package(BinaryNinjaCore REQUIRED)
 
 find_program(RUSTUP_PATH rustup REQUIRED HINTS ~/.cargo/bin)
 set(RUSTUP_COMMAND ${RUSTUP_PATH} run ${CARGO_STABLE_VERSION} cargo build)
@@ -40,10 +39,10 @@ if(APPLE)
         add_custom_command(
                 OUTPUT ${OUTPUT_PATH}
                 COMMAND ${CMAKE_COMMAND} -E env
-                MACOSX_DEPLOYMENT_TARGET=10.14
+                MACOSX_DEPLOYMENT_TARGET=10.14 BINARYNINJADIR=${BN_INSTALL_BIN_DIR}
                 ${RUSTUP_COMMAND} --target=aarch64-apple-darwin ${CARGO_OPTS}
                 COMMAND ${CMAKE_COMMAND} -E env
-                MACOSX_DEPLOYMENT_TARGET=10.14
+                MACOSX_DEPLOYMENT_TARGET=10.14 BINARYNINJADIR=${BN_INSTALL_BIN_DIR}
                 ${RUSTUP_COMMAND} --target=x86_64-apple-darwin ${CARGO_OPTS}
                 COMMAND ${CMAKE_COMMAND} -E copy ${AARCH64_LIB_PATH} ${OUTPUT_PATH}-aarch
                 COMMAND ${CMAKE_COMMAND} -E copy ${X86_64_LIB_PATH} ${OUTPUT_PATH}
@@ -59,7 +58,7 @@ if(APPLE)
         add_custom_command(
                 OUTPUT ${OUTPUT_PATH}
                 COMMAND ${CMAKE_COMMAND} -E env
-                MACOSX_DEPLOYMENT_TARGET=10.14
+                MACOSX_DEPLOYMENT_TARGET=10.14 BINARYNINJADIR=${BN_INSTALL_BIN_DIR}
                 ${RUSTUP_COMMAND} ${CARGO_OPTS}
                 COMMAND ${CMAKE_COMMAND} -E copy ${LIB_PATH} ${OUTPUT_PATH}
                 WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -68,14 +67,14 @@ if(APPLE)
 elseif(WIN32)
     add_custom_command(
             OUTPUT ${OUTPUT_PATH}
-            COMMAND ${CMAKE_COMMAND} -E env ${RUSTUP_COMMAND} ${CARGO_OPTS}
+            COMMAND ${CMAKE_COMMAND} -E env BINARYNINJADIR=${BN_INSTALL_BIN_DIR} ${RUSTUP_COMMAND} ${CARGO_OPTS}
             COMMAND ${CMAKE_COMMAND} -E copy ${TARGET_DIR}/${OUTPUT_FILE} ${OUTPUT_PATH}
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             DEPENDS ${PLUGIN_SOURCES})
 else()
     add_custom_command(
             OUTPUT ${OUTPUT_PATH}
-            COMMAND ${CMAKE_COMMAND} -E env ${RUSTUP_COMMAND} ${CARGO_OPTS}
+            COMMAND ${CMAKE_COMMAND} -E env BINARYNINJADIR=${BN_INSTALL_BIN_DIR} ${RUSTUP_COMMAND} ${CARGO_OPTS}
             COMMAND ${CMAKE_COMMAND} -E copy ${TARGET_DIR}/${OUTPUT_FILE} ${OUTPUT_PATH}
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
             DEPENDS ${PLUGIN_SOURCES})
