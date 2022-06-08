@@ -470,12 +470,12 @@ pub extern "C" fn CorePluginInit() -> bool {
     DebugInfoParser::register("IDB Parser", IDBParser {});
     DebugInfoParser::register("TIL Parser", TILParser {});
     binaryninja::command::register(
-        "IDB\\Import Types From .i64",
+        "IDB (Beta)\\Import Types From .i64",
         "Import IDB Types From File",
         IDBImport {},
     );
     binaryninja::command::register(
-        "IDB\\Import IDA .til",
+        "IDB (Beta)\\Import IDA .til",
         "Import TIL Types From File",
         TILImport {},
     );
