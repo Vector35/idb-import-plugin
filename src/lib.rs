@@ -387,6 +387,7 @@ impl CustomDebugInfoParser for IDBParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
         true
     }
+    fn is_external(&self) -> bool { true }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
@@ -412,6 +413,7 @@ impl CustomDebugInfoParser for TILParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
         true
     }
+    fn is_external(&self) -> bool { true }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.til") {
