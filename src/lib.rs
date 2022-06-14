@@ -1,8 +1,14 @@
-use binaryninja::rc::Ref;
-use binaryninja::types::{
+#[cfg(not(feature = "internal"))]
+mod binja{pub use binaryninja::*;}
+
+#[cfg(feature = "internal")]
+mod binja{pub use binaryninja_internal::*;}
+
+use binja::rc::Ref;
+use binja::types::{
     max_confidence, Conf, NamedTypeReferenceClass, QualifiedName, StructureType, Type,
 };
-use binaryninja::{
+use binja::{
     binaryninjacore_sys::{BNMemberAccess, BNMemberScope, BNNamedTypeReferenceClass},
     binaryview::{BinaryView, BinaryViewBase, BinaryViewExt},
     command::Command,
@@ -49,7 +55,7 @@ impl TILParser {
         &'a self,
         bv: &BinaryView,
         til: &'a TILSection,
-    ) -> Option<Vec<Result<(&'a [u8], binaryninja::rc::Ref<binaryninja::types::Type>), TypeError>>>
+    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>>
     {
         let parser = IDBParser {};
         match &til.types {
@@ -134,7 +140,7 @@ impl IDBParser {
                     let mut vec = Vec::new();
                     for (t, str) in std::iter::zip(&fun.args, &tinfo.fields.0) {
                         if let Some(f) = self.create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
-                            vec.push(binaryninja::types::FunctionParameter::new(
+                            vec.push(binja::types::FunctionParameter::new(
                                 f,
                                 str.as_str(),
                                 None,
@@ -188,7 +194,7 @@ impl IDBParser {
                         .find(|x| x.name.0.as_slice() == tdef.name.as_bytes())
                     {
                         Some(Type::named_type(
-                            &binaryninja::types::NamedTypeReference::new(
+                            &binja::types::NamedTypeReference::new(
                                 NamedTypeReferenceClass::UnknownNamedTypeClass,
                                 "",
                                 QualifiedName::from(tdef.name.as_str()),
@@ -222,7 +228,7 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut structure = binaryninja::types::StructureBuilder::new();
+                    let mut structure = binja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&str.members, &tinfo.fields.0) {
                         if let Some(mem) =
                             self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
@@ -252,7 +258,7 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut structure = binaryninja::types::StructureBuilder::new();
+                    let mut structure = binja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&uni.members, &tinfo.fields.0) {
                         if let Some(mem) =
                             self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
@@ -267,7 +273,7 @@ impl IDBParser {
                     }
                     structure.set_structure_type(StructureType::UnionStructureType);
                     let str_ref = structure.finalize();
-                    Some(binaryninja::types::Type::structure(&str_ref))
+                    Some(binja::types::Type::structure(&str_ref))
                 }
             }
             Types::Enum(enu) => {
@@ -275,7 +281,7 @@ impl IDBParser {
                     if let Some(ref_type) =
                         self.create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0)
                     {
-                        Some(binaryninja::types::Type::named_type_from_type(
+                        Some(binja::types::Type::named_type_from_type(
                             std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
                             &*ref_type,
                         ))
@@ -283,11 +289,11 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut eb = binaryninja::types::EnumerationBuilder::new();
+                    let mut eb = binja::types::EnumerationBuilder::new();
                     for (member, name) in std::iter::zip(&enu.members, &tinfo.fields.0) {
                         eb.insert(name.as_str(), member.0);
                     }
-                    Some(binaryninja::types::Type::enumeration(
+                    Some(binja::types::Type::enumeration(
                         &eb.finalize(),
                         enu.bytesize as usize,
                         Conf::new(false, 0),
@@ -306,7 +312,7 @@ impl IDBParser {
         &'a self,
         bv: &BinaryView,
         idb: &'a IDB,
-    ) -> Option<Vec<Result<(&'a [u8], binaryninja::rc::Ref<binaryninja::types::Type>), TypeError>>>
+    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>>
     {
         if let Some(til) = &idb.til {
             match &til.types {
@@ -354,7 +360,7 @@ impl IDBParser {
     //     bv: &BinaryView,
     //     name: String,
     //     idb: &IDB,
-    // ) -> Option<(String, binaryninja::rc::Ref<binaryninja::types::Type>)> {
+    // ) -> Option<(String, binja::rc::Ref<binja::types::Type>)> {
     //     if let Some(til) = &idb.til {
     //         match &til.types {
     //             TILBucketType::Default(default) => {
@@ -471,12 +477,12 @@ pub extern "C" fn CorePluginInit() -> bool {
     logger::init(log::LevelFilter::Debug);
     DebugInfoParser::register("IDB Parser", IDBParser {});
     DebugInfoParser::register("TIL Parser", TILParser {});
-    binaryninja::command::register(
+    binja::command::register(
         "IDB (Beta)\\Import Types From .i64",
         "Import IDB Types From File",
         IDBImport {},
     );
-    binaryninja::command::register(
+    binja::command::register(
         "IDB (Beta)\\Import IDA .til",
         "Import TIL Types From File",
         TILImport {},
