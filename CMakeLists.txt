@@ -8,10 +8,10 @@ file(GLOB PLUGIN_SOURCES
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     set(TARGET_DIR ${PROJECT_BINARY_DIR}/target/debug)
-    set(CARGO_OPTS --target-dir=${PROJECT_BINARY_DIR}/target)
+    set(CARGO_OPTS --target-dir=${PROJECT_BINARY_DIR}/target --features "internal")
 else()
     set(TARGET_DIR ${PROJECT_BINARY_DIR}/target/release)
-    set(CARGO_OPTS --target-dir=${PROJECT_BINARY_DIR}/target --release)
+    set(CARGO_OPTS --target-dir=${PROJECT_BINARY_DIR}/target --release --features "internal")
 endif()
 
 set(OUTPUT_FILE ${CMAKE_SHARED_LIBRARY_PREFIX}idb_import_plugin${CMAKE_SHARED_LIBRARY_SUFFIX})
