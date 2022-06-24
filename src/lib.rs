@@ -15,7 +15,7 @@ use binja::{
     debuginfo::{CustomDebugInfoParser, DebugInfo, DebugInfoParser},
     interaction::get_open_filename_input,
     logger,
-    types::MemberAccess,
+    types::{MemberAccess, NamedTypeReference},
 };
 use idb_parser::{TILBucket, TILBucketType, TILOrdinal, TILSection, TILTypeInfo, Types, IDB};
 use log::{debug, error, info, log, trace, warn};
@@ -174,16 +174,13 @@ impl IDBParser {
                             TILOrdinal::U64(t) => {t}
                         } == tdef.ordinal.0 as u64)
                     {
-                        if let Some(typ) =
-                            self.create_bn_type_from_idb(bv, bucket, tinfo, &lookup.tinfo)
-                        {
-                            Some(Type::named_type_from_type(
-                                std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                                    &typ,
-                            ))
-                        } else {
-                            None
-                        }
+                        Some(Type::named_type(
+                            &NamedTypeReference::new(
+                                NamedTypeReferenceClass::TypedefNamedTypeClass,
+                                "",
+                                QualifiedName::from(std::str::from_utf8(&lookup.name.0).unwrap()),
+                            )
+                        ))
                     } else {
                         None
                     }
