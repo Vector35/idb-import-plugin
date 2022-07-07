@@ -1,8 +1,12 @@
 #[cfg(not(feature = "internal"))]
-mod binja{pub use binaryninja::*;}
+mod binja {
+    pub use binaryninja::*;
+}
 
 #[cfg(feature = "internal")]
-mod binja{pub use binaryninja_internal::*;}
+mod binja {
+    pub use binaryninja_internal::*;
+}
 
 use binja::rc::Ref;
 use binja::types::{
@@ -55,8 +59,7 @@ impl TILParser {
         &'a self,
         bv: &BinaryView,
         til: &'a TILSection,
-    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>>
-    {
+    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>> {
         let parser = IDBParser {};
         match &til.types {
             TILBucketType::Default(default) => Some(
@@ -140,11 +143,7 @@ impl IDBParser {
                     let mut vec = Vec::new();
                     for (t, str) in std::iter::zip(&fun.args, &tinfo.fields.0) {
                         if let Some(f) = self.create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
-                            vec.push(binja::types::FunctionParameter::new(
-                                f,
-                                str.as_str(),
-                                None,
-                            ));
+                            vec.push(binja::types::FunctionParameter::new(f, str.as_str(), None));
                         }
                     }
 
@@ -193,13 +192,11 @@ impl IDBParser {
                         .iter()
                         .find(|x| x.name.0.as_slice() == tdef.name.as_bytes())
                     {
-                        Some(Type::named_type(
-                            &binja::types::NamedTypeReference::new(
-                                NamedTypeReferenceClass::UnknownNamedTypeClass,
-                                "",
-                                QualifiedName::from(tdef.name.as_str()),
-                            ),
-                        ))
+                        Some(Type::named_type(&binja::types::NamedTypeReference::new(
+                            NamedTypeReferenceClass::UnknownNamedTypeClass,
+                            "",
+                            QualifiedName::from(tdef.name.as_str()),
+                        )))
                     } else {
                         match tdef.name.as_str() {
                             "int8_t" => Some(Type::int(1, true)),
@@ -312,8 +309,7 @@ impl IDBParser {
         &'a self,
         bv: &BinaryView,
         idb: &'a IDB,
-    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>>
-    {
+    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>> {
         if let Some(til) = &idb.til {
             match &til.types {
                 TILBucketType::Default(default) => Some(
@@ -393,7 +389,9 @@ impl CustomDebugInfoParser for IDBParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
         true
     }
-    fn is_external(&self) -> bool { true }
+    fn is_external(&self) -> bool {
+        true
+    }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
@@ -419,7 +417,9 @@ impl CustomDebugInfoParser for TILParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
         true
     }
-    fn is_external(&self) -> bool { true }
+    fn is_external(&self) -> bool {
+        true
+    }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.til") {
