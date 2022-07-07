@@ -9,21 +9,17 @@ mod binja {
 }
 
 use binja::rc::Ref;
-use binja::types::{
-    max_confidence, Conf, NamedTypeReferenceClass, QualifiedName, StructureType, Type,
-};
+use binja::types::{Conf, NamedTypeReferenceClass, QualifiedName, StructureType, Type};
 use binja::{
-    binaryninjacore_sys::{BNMemberAccess, BNMemberScope, BNNamedTypeReferenceClass},
-    binaryview::{BinaryView, BinaryViewBase, BinaryViewExt},
+    binaryninjacore_sys::{BNMemberAccess, BNMemberScope},
+    binaryview::{BinaryView, BinaryViewExt},
     command::Command,
     debuginfo::{CustomDebugInfoParser, DebugInfo, DebugInfoParser},
     interaction::get_open_filename_input,
     logger,
-    types::MemberAccess,
 };
 use idb_parser::{TILBucket, TILBucketType, TILOrdinal, TILSection, TILTypeInfo, Types, IDB};
-use log::{debug, error, info, log, trace, warn};
-use std::any::Any;
+use log::error;
 use std::fmt::{Debug, Display, Formatter};
 
 struct IDBParser;
@@ -94,7 +90,6 @@ impl TILParser {
                         .collect(),
                 )
             }
-            _ => None,
         }
     }
 }
@@ -168,7 +163,7 @@ impl IDBParser {
                     if let Some(lookup) = bucket
                         .type_info
                         .iter()
-                        .find(|x| match x.ordinal{
+                        .find(|x| match x.ordinal {
                             TILOrdinal::U32(t) => {t as u64}
                             TILOrdinal::U64(t) => {t}
                         } == tdef.ordinal.0 as u64)
@@ -187,10 +182,11 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    if let Some(lookup) = bucket
+                    if bucket
                         .type_info
                         .iter()
                         .find(|x| x.name.0.as_slice() == tdef.name.as_bytes())
+                        .is_some()
                     {
                         Some(Type::named_type(&binja::types::NamedTypeReference::new(
                             NamedTypeReferenceClass::UnknownNamedTypeClass,
@@ -297,7 +293,7 @@ impl IDBParser {
                     ))
                 }
             }
-            Types::Bitfield(bitfld) => {
+            Types::Bitfield(_) => {
                 error!("Bitfields are not supported");
                 None
             }
@@ -344,7 +340,6 @@ impl IDBParser {
                             .collect(),
                     )
                 }
-                _ => None,
             }
         } else {
             None
@@ -389,9 +384,6 @@ impl CustomDebugInfoParser for IDBParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
         true
     }
-    fn is_external(&self) -> bool {
-        true
-    }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
@@ -415,9 +407,6 @@ impl CustomDebugInfoParser for IDBParser {
 
 impl CustomDebugInfoParser for TILParser {
     fn is_valid(&self, _view: &BinaryView) -> bool {
-        true
-    }
-    fn is_external(&self) -> bool {
         true
     }
 
