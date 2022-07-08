@@ -381,8 +381,8 @@ impl IDBParser {
 }
 
 impl CustomDebugInfoParser for IDBParser {
-    fn is_valid(&self, _view: &BinaryView) -> bool {
-        true
+    fn is_valid(&self, view: &BinaryView) -> bool {
+        view.metadata().filename().ends_with(".i64")
     }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
@@ -406,8 +406,8 @@ impl CustomDebugInfoParser for IDBParser {
 }
 
 impl CustomDebugInfoParser for TILParser {
-    fn is_valid(&self, _view: &BinaryView) -> bool {
-        true
+    fn is_valid(&self, view: &BinaryView) -> bool {
+        view.metadata().filename().ends_with(".i64")
     }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
@@ -441,7 +441,7 @@ impl Command for IDBImport {
         }
     }
 
-    fn valid(&self, view: &BinaryView) -> bool {
+    fn valid(&self, _view: &BinaryView) -> bool {
         true
     }
 }
@@ -456,14 +456,14 @@ impl Command for TILImport {
         }
     }
 
-    fn valid(&self, view: &BinaryView) -> bool {
+    fn valid(&self, _view: &BinaryView) -> bool {
         true
     }
 }
 
 #[no_mangle]
 pub extern "C" fn CorePluginInit() -> bool {
-    logger::init(log::LevelFilter::Debug);
+    let _logger = logger::init(log::LevelFilter::Debug);
     DebugInfoParser::register("IDB Parser", IDBParser {});
     DebugInfoParser::register("TIL Parser", TILParser {});
     binja::command::register(
