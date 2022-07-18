@@ -382,7 +382,7 @@ impl IDBParser {
 
 impl CustomDebugInfoParser for IDBParser {
     fn is_valid(&self, view: &BinaryView) -> bool {
-        view.metadata().filename().ends_with(".i64")
+        view.file().filename().ends_with(".i64")
     }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
@@ -407,7 +407,7 @@ impl CustomDebugInfoParser for IDBParser {
 
 impl CustomDebugInfoParser for TILParser {
     fn is_valid(&self, view: &BinaryView) -> bool {
-        view.metadata().filename().ends_with(".i64")
+        view.file().filename().ends_with(".i64")
     }
 
     fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
