@@ -385,7 +385,7 @@ impl CustomDebugInfoParser for IDBParser {
         view.file().filename().ends_with(".i64")
     }
 
-    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
+    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(idb) = IDB::parse_from_file(path) {
@@ -395,13 +395,15 @@ impl CustomDebugInfoParser for IDBParser {
                                 debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
                             }
                             Err(err) => {
-                                error!("{}", err)
+                                error!("{}", err);
                             }
-                        })
+                        });
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 }
 
@@ -410,7 +412,7 @@ impl CustomDebugInfoParser for TILParser {
         view.file().filename().ends_with(".i64")
     }
 
-    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) {
+    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.til") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(til) = TILSection::parse_from_file(path) {
@@ -423,11 +425,12 @@ impl CustomDebugInfoParser for TILParser {
                                 error!("{}", err)
                             }
                         });
-                        ok
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 }
 
@@ -436,8 +439,10 @@ impl Command for IDBImport {
     fn action(&self, view: &BinaryView) {
         let idb_parser = DebugInfoParser::from_name("IDB Parser");
         if let Ok(parser) = idb_parser {
-            let debug_info = parser.parse_debug_info(view, None);
-            view.apply_debug_info(&debug_info)
+            match parser.parse_debug_info(view, None) {
+                Some(debug_info) => view.apply_debug_info(&debug_info),
+                _ => {}
+            }
         }
     }
 
@@ -451,8 +456,10 @@ impl Command for TILImport {
     fn action(&self, view: &BinaryView) {
         let idb_parser = DebugInfoParser::from_name("TIL Parser");
         if let Ok(parser) = idb_parser {
-            let debug_info = parser.parse_debug_info(view, None);
-            view.apply_debug_info(&debug_info)
+            match parser.parse_debug_info(view, None) {
+                Some(debug_info) => view.apply_debug_info(&debug_info),
+                _ => {}
+            }
         }
     }
 
