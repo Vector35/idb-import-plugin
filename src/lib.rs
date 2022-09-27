@@ -385,7 +385,12 @@ impl CustomDebugInfoParser for IDBParser {
         view.file().filename().ends_with(".i64")
     }
 
-    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) -> bool {
+    fn parse_info(
+        &self,
+        debug_info: &mut DebugInfo,
+        bv: &BinaryView,
+        _progress: Box<dyn Fn(usize, usize) -> Result<(), ()>>,
+    ) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(idb) = IDB::parse_from_file(path) {
@@ -412,7 +417,12 @@ impl CustomDebugInfoParser for TILParser {
         view.file().filename().ends_with(".i64")
     }
 
-    fn parse_info(&self, debug_info: &mut DebugInfo, bv: &BinaryView) -> bool {
+    fn parse_info(
+        &self,
+        debug_info: &mut DebugInfo,
+        bv: &BinaryView,
+        _progress: Box<dyn Fn(usize, usize) -> Result<(), ()>>,
+    ) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.til") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(til) = TILSection::parse_from_file(path) {
@@ -439,7 +449,7 @@ impl Command for IDBImport {
     fn action(&self, view: &BinaryView) {
         let idb_parser = DebugInfoParser::from_name("IDB Parser");
         if let Ok(parser) = idb_parser {
-            match parser.parse_debug_info(view, None) {
+            match parser.parse_debug_info(view, None, None) {
                 Some(debug_info) => view.apply_debug_info(&debug_info),
                 _ => {}
             }
@@ -456,7 +466,7 @@ impl Command for TILImport {
     fn action(&self, view: &BinaryView) {
         let idb_parser = DebugInfoParser::from_name("TIL Parser");
         if let Ok(parser) = idb_parser {
-            match parser.parse_debug_info(view, None) {
+            match parser.parse_debug_info(view, None, None) {
                 Some(debug_info) => view.apply_debug_info(&debug_info),
                 _ => {}
             }
