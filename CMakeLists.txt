@@ -21,6 +21,7 @@ else()
 endif()
 
 set(OUTPUT_FILE ${CMAKE_SHARED_LIBRARY_PREFIX}idb_import_plugin${CMAKE_SHARED_LIBRARY_SUFFIX})
+set(OUTPUT_PDB ${CMAKE_SHARED_LIBRARY_PREFIX}idb_import_plugin.pdb)
 set(OUTPUT_PATH ${BN_CORE_PLUGIN_DIR}/${OUTPUT_FILE})
 
 add_custom_target(idb_import_plugin ALL DEPENDS ${OUTPUT_PATH})
