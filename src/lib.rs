@@ -444,54 +444,10 @@ impl CustomDebugInfoParser for TILParser {
     }
 }
 
-struct IDBImport;
-impl Command for IDBImport {
-    fn action(&self, view: &BinaryView) {
-        let idb_parser = DebugInfoParser::from_name("IDB Parser");
-        if let Ok(parser) = idb_parser {
-            match parser.parse_debug_info(view, None, None) {
-                Some(debug_info) => view.apply_debug_info(&debug_info),
-                _ => {}
-            }
-        }
-    }
-
-    fn valid(&self, _view: &BinaryView) -> bool {
-        true
-    }
-}
-
-struct TILImport;
-impl Command for TILImport {
-    fn action(&self, view: &BinaryView) {
-        let idb_parser = DebugInfoParser::from_name("TIL Parser");
-        if let Ok(parser) = idb_parser {
-            match parser.parse_debug_info(view, None, None) {
-                Some(debug_info) => view.apply_debug_info(&debug_info),
-                _ => {}
-            }
-        }
-    }
-
-    fn valid(&self, _view: &BinaryView) -> bool {
-        true
-    }
-}
-
 #[no_mangle]
 pub extern "C" fn CorePluginInit() -> bool {
     let _logger = logger::init(log::LevelFilter::Debug);
     DebugInfoParser::register("IDB Parser", IDBParser {});
     DebugInfoParser::register("TIL Parser", TILParser {});
-    binja::command::register(
-        "IDB (Beta)\\Import Types From .i64",
-        "Import IDB Types From File",
-        IDBImport {},
-    );
-    binja::command::register(
-        "IDB (Beta)\\Import IDA .til",
-        "Import TIL Types From File",
-        TILImport {},
-    );
     true
 }
