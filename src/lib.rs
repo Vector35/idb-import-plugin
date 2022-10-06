@@ -1,19 +1,8 @@
-#[cfg(not(feature = "internal"))]
-mod binja {
-    pub use binaryninja::*;
-}
-
-#[cfg(feature = "internal")]
-mod binja {
-    pub use binaryninja_internal::*;
-}
-
-use binja::rc::Ref;
-use binja::types::{Conf, NamedTypeReferenceClass, QualifiedName, StructureType, Type};
-use binja::{
+use binaryninja::rc::Ref;
+use binaryninja::types::{Conf, NamedTypeReferenceClass, QualifiedName, StructureType, Type};
+use binaryninja::{
     binaryninjacore_sys::{BNMemberAccess, BNMemberScope},
     binaryview::{BinaryView, BinaryViewExt},
-    command::Command,
     debuginfo::{CustomDebugInfoParser, DebugInfo, DebugInfoParser},
     interaction::get_open_filename_input,
     logger,
@@ -55,7 +44,8 @@ impl TILParser {
         &'a self,
         bv: &BinaryView,
         til: &'a TILSection,
-    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>> {
+    ) -> Option<Vec<Result<(&'a [u8], binaryninja::rc::Ref<binaryninja::types::Type>), TypeError>>>
+    {
         let parser = IDBParser {};
         match &til.types {
             TILBucketType::Default(default) => Some(
@@ -138,7 +128,11 @@ impl IDBParser {
                     let mut vec = Vec::new();
                     for (t, str) in std::iter::zip(&fun.args, &tinfo.fields.0) {
                         if let Some(f) = self.create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
-                            vec.push(binja::types::FunctionParameter::new(f, str.as_str(), None));
+                            vec.push(binaryninja::types::FunctionParameter::new(
+                                f,
+                                str.as_str(),
+                                None,
+                            ));
                         }
                     }
 
@@ -188,11 +182,13 @@ impl IDBParser {
                         .find(|x| x.name.0.as_slice() == tdef.name.as_bytes())
                         .is_some()
                     {
-                        Some(Type::named_type(&binja::types::NamedTypeReference::new(
-                            NamedTypeReferenceClass::UnknownNamedTypeClass,
-                            "",
-                            QualifiedName::from(tdef.name.as_str()),
-                        )))
+                        Some(Type::named_type(
+                            &binaryninja::types::NamedTypeReference::new(
+                                NamedTypeReferenceClass::UnknownNamedTypeClass,
+                                "",
+                                QualifiedName::from(tdef.name.as_str()),
+                            ),
+                        ))
                     } else {
                         match tdef.name.as_str() {
                             "int8_t" => Some(Type::int(1, true)),
@@ -221,7 +217,7 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut structure = binja::types::StructureBuilder::new();
+                    let mut structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&str.members, &tinfo.fields.0) {
                         if let Some(mem) =
                             self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
@@ -251,7 +247,7 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut structure = binja::types::StructureBuilder::new();
+                    let mut structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&uni.members, &tinfo.fields.0) {
                         if let Some(mem) =
                             self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
@@ -266,7 +262,7 @@ impl IDBParser {
                     }
                     structure.set_structure_type(StructureType::UnionStructureType);
                     let str_ref = structure.finalize();
-                    Some(binja::types::Type::structure(&str_ref))
+                    Some(binaryninja::types::Type::structure(&str_ref))
                 }
             }
             Types::Enum(enu) => {
@@ -274,7 +270,7 @@ impl IDBParser {
                     if let Some(ref_type) =
                         self.create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0)
                     {
-                        Some(binja::types::Type::named_type_from_type(
+                        Some(binaryninja::types::Type::named_type_from_type(
                             std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
                             &*ref_type,
                         ))
@@ -282,11 +278,11 @@ impl IDBParser {
                         None
                     }
                 } else {
-                    let mut eb = binja::types::EnumerationBuilder::new();
+                    let mut eb = binaryninja::types::EnumerationBuilder::new();
                     for (member, name) in std::iter::zip(&enu.members, &tinfo.fields.0) {
                         eb.insert(name.as_str(), member.0);
                     }
-                    Some(binja::types::Type::enumeration(
+                    Some(binaryninja::types::Type::enumeration(
                         &eb.finalize(),
                         enu.bytesize as usize,
                         Conf::new(false, 0),
@@ -305,7 +301,8 @@ impl IDBParser {
         &'a self,
         bv: &BinaryView,
         idb: &'a IDB,
-    ) -> Option<Vec<Result<(&'a [u8], binja::rc::Ref<binja::types::Type>), TypeError>>> {
+    ) -> Option<Vec<Result<(&'a [u8], binaryninja::rc::Ref<binaryninja::types::Type>), TypeError>>>
+    {
         if let Some(til) = &idb.til {
             match &til.types {
                 TILBucketType::Default(default) => Some(
@@ -351,7 +348,7 @@ impl IDBParser {
     //     bv: &BinaryView,
     //     name: String,
     //     idb: &IDB,
-    // ) -> Option<(String, binja::rc::Ref<binja::types::Type>)> {
+    // ) -> Option<(String, binaryninja::rc::Ref<binaryninja::types::Type>)> {
     //     if let Some(til) = &idb.til {
     //         match &til.types {
     //             TILBucketType::Default(default) => {
@@ -427,12 +424,12 @@ impl CustomDebugInfoParser for TILParser {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(til) = TILSection::parse_from_file(path) {
                     if let Some(types) = self.parse_all_types(bv, &til) {
-                        let ok = types.iter().for_each(|x| match x {
+                        types.iter().for_each(|x| match x {
                             Ok((str, ty)) => {
                                 debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
                             }
                             Err(err) => {
-                                error!("{}", err)
+                                error!("{}", err);
                             }
                         });
                         return true;

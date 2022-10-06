@@ -3,6 +3,16 @@ IDA Database Importer plugin for Binary Ninja written in Rust
 
 ---
 
+## Developing
+
+If you download this repo to make changes to it yourself, you'll need to change the Binary Ninja dependency in `Cargo.toml` to:
+
+```
+binaryninja = {git = "https://github.com/Vector35/binaryninja-api.git", branch = "dev"}
+```
+
+---
+
 #### Attribution
 
 This project makes use of:
