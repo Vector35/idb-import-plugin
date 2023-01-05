@@ -22,7 +22,7 @@ enum TypeError<'a> {
 impl<'a> Display for TypeError<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TypeError::FailedToParse(ref err) => write!(
+            TypeError::FailedToParse(err) => write!(
                 f,
                 "Failed to parse type: {:?}",
                 std::str::from_utf8(err).unwrap()
@@ -34,7 +34,7 @@ impl<'a> Display for TypeError<'a> {
 impl<'a> std::error::Error for TypeError<'a> {
     fn description(&self) -> &str {
         match *self {
-            TypeError::FailedToParse(ref err) => std::str::from_utf8(err).unwrap(),
+            TypeError::FailedToParse(err) => std::str::from_utf8(err).unwrap(),
         }
     }
 }
@@ -46,7 +46,6 @@ impl TILParser {
         til: &'a TILSection,
     ) -> Option<Vec<Result<(&'a [u8], binaryninja::rc::Ref<binaryninja::types::Type>), TypeError>>>
     {
-        let parser = IDBParser {};
         match &til.types {
             TILBucketType::Default(default) => Some(
                 default
@@ -54,7 +53,7 @@ impl TILParser {
                     .iter()
                     .map(|x| {
                         if let Some(bn_type) =
-                            parser.create_bn_type_from_idb(bv, &default, &x, &x.tinfo)
+                            IDBParser::create_bn_type_from_idb(bv, default, x, &x.tinfo)
                         {
                             Ok((x.name.0.as_slice(), bn_type))
                         } else {
@@ -70,7 +69,7 @@ impl TILParser {
                         .iter()
                         .map(|x| {
                             if let Some(bn_type) =
-                                parser.create_bn_type_from_idb(bv, &unzip, &x, &x.tinfo)
+                                IDBParser::create_bn_type_from_idb(bv, &unzip, x, &x.tinfo)
                             {
                                 Ok((x.name.0.as_slice(), bn_type))
                             } else {
@@ -86,7 +85,6 @@ impl TILParser {
 
 impl IDBParser {
     fn create_bn_type_from_idb(
-        &self,
         bv: &BinaryView,
         bucket: &TILBucket,
         tinfo: &TILTypeInfo,
@@ -114,20 +112,17 @@ impl IDBParser {
             },
             Types::Pointer(ptr) => {
                 if let Some(arch) = bv.default_arch() {
-                    if let Some(ty) = self.create_bn_type_from_idb(bv, bucket, tinfo, &ptr.typ) {
-                        Some(Type::pointer(&arch, &*ty))
-                    } else {
-                        None
-                    }
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &ptr.typ)
+                        .map(|ty| Type::pointer(&arch, &*ty))
                 } else {
                     None
                 }
             }
             Types::Function(fun) => {
-                if let Some(return_ty) = self.create_bn_type_from_idb(bv, bucket, tinfo, &fun.ret) {
+                if let Some(return_ty) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &fun.ret) {
                     let mut vec = Vec::new();
                     for (t, str) in std::iter::zip(&fun.args, &tinfo.fields.0) {
-                        if let Some(f) = self.create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
+                        if let Some(f) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
                             vec.push(binaryninja::types::FunctionParameter::new(
                                 f,
                                 str.as_str(),
@@ -145,13 +140,8 @@ impl IDBParser {
                     None
                 }
             }
-            Types::Array(arr) => {
-                if let Some(t) = self.create_bn_type_from_idb(bv, bucket, tinfo, &arr.elem_type) {
-                    Some(Type::array(Conf::new(&*t, 100), arr.nelem as u64))
-                } else {
-                    None
-                }
-            }
+            Types::Array(arr) => Self::create_bn_type_from_idb(bv, bucket, tinfo, &arr.elem_type)
+                .map(|t| Type::array(Conf::new(&*t, 100), arr.nelem as u64)),
             Types::Typedef(tdef) => {
                 if tdef.is_ordref {
                     if let Some(lookup) = bucket
@@ -162,66 +152,51 @@ impl IDBParser {
                             TILOrdinal::U64(t) => {t}
                         } == tdef.ordinal.0 as u64)
                     {
-                        if let Some(typ) =
-                            self.create_bn_type_from_idb(bv, bucket, tinfo, &lookup.tinfo)
-                        {
-                            Some(Type::named_type_from_type(
-                                std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                                    &typ,
-                            ))
-                        } else {
-                            None
-                        }
+                        Self::create_bn_type_from_idb(bv, bucket, tinfo, &lookup.tinfo).map(|typ| Type::named_type_from_type(
+                            std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
+                            &typ,
+                        ))
                     } else {
                         None
                     }
+                } else if bucket
+                    .type_info
+                    .iter()
+                    .any(|x| x.name.0.as_slice() == tdef.name.as_bytes())
+                {
+                    Some(Type::named_type(
+                        &binaryninja::types::NamedTypeReference::new(
+                            NamedTypeReferenceClass::UnknownNamedTypeClass,
+                            "",
+                            QualifiedName::from(tdef.name.as_str()),
+                        ),
+                    ))
                 } else {
-                    if bucket
-                        .type_info
-                        .iter()
-                        .find(|x| x.name.0.as_slice() == tdef.name.as_bytes())
-                        .is_some()
-                    {
-                        Some(Type::named_type(
-                            &binaryninja::types::NamedTypeReference::new(
-                                NamedTypeReferenceClass::UnknownNamedTypeClass,
-                                "",
-                                QualifiedName::from(tdef.name.as_str()),
-                            ),
-                        ))
-                    } else {
-                        match tdef.name.as_str() {
-                            "int8_t" => Some(Type::int(1, true)),
-                            "int16_t" => Some(Type::int(2, true)),
-                            "int32_t" => Some(Type::int(4, true)),
-                            "int64_t" => Some(Type::int(8, true)),
-                            "int128_t" => Some(Type::int(16, true)),
-                            _ => {
-                                error!("Failed to find typedef: {}", tdef.name.as_str());
-                                None
-                            }
+                    match tdef.name.as_str() {
+                        "int8_t" => Some(Type::int(1, true)),
+                        "int16_t" => Some(Type::int(2, true)),
+                        "int32_t" => Some(Type::int(4, true)),
+                        "int64_t" => Some(Type::int(8, true)),
+                        "int128_t" => Some(Type::int(16, true)),
+                        _ => {
+                            error!("Failed to find typedef: {}", tdef.name.as_str());
+                            None
                         }
                     }
                 }
             }
             Types::Struct(str) => {
                 if str.is_ref {
-                    if let Some(ref_type) =
-                        self.create_bn_type_from_idb(bv, bucket, tinfo, &str.ref_type.0)
-                    {
-                        Some(Type::named_type_from_type(
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &str.ref_type.0).map(|ref_type| {
+                        Type::named_type_from_type(
                             std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                            &*ref_type,
-                        ))
-                    } else {
-                        None
-                    }
+                            &ref_type,
+                        )
+                    })
                 } else {
-                    let mut structure = binaryninja::types::StructureBuilder::new();
+                    let structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&str.members, &tinfo.fields.0) {
-                        if let Some(mem) =
-                            self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
-                        {
+                        if let Some(mem) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0) {
                             structure.append(
                                 mem.as_ref(),
                                 name.as_str(),
@@ -236,22 +211,17 @@ impl IDBParser {
             }
             Types::Union(uni) => {
                 if uni.is_ref {
-                    if let Some(ref_type) =
-                        self.create_bn_type_from_idb(bv, bucket, tinfo, &uni.ref_type.0)
-                    {
-                        Some(Type::named_type_from_type(
-                            std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                            &*ref_type,
-                        ))
-                    } else {
-                        None
-                    }
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &uni.ref_type.0)
+                        .map(|ref_type| {
+                            Type::named_type_from_type(
+                                std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
+                                &ref_type,
+                            )
+                        })
                 } else {
-                    let mut structure = binaryninja::types::StructureBuilder::new();
+                    let structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&uni.members, &tinfo.fields.0) {
-                        if let Some(mem) =
-                            self.create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
-                        {
+                        if let Some(mem) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0) {
                             structure.append(
                                 mem.as_ref(),
                                 name.as_str(),
@@ -267,18 +237,14 @@ impl IDBParser {
             }
             Types::Enum(enu) => {
                 if enu.is_ref {
-                    if let Some(ref_type) =
-                        self.create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0)
-                    {
-                        Some(binaryninja::types::Type::named_type_from_type(
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0).map(|ref_type| {
+                        binaryninja::types::Type::named_type_from_type(
                             std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                            &*ref_type,
-                        ))
-                    } else {
-                        None
-                    }
+                            &ref_type,
+                        )
+                    })
                 } else {
-                    let mut eb = binaryninja::types::EnumerationBuilder::new();
+                    let eb = binaryninja::types::EnumerationBuilder::new();
                     for (member, name) in std::iter::zip(&enu.members, &tinfo.fields.0) {
                         eb.insert(name.as_str(), member.0);
                     }
@@ -310,8 +276,7 @@ impl IDBParser {
                         .type_info
                         .iter()
                         .map(|x| {
-                            if let Some(bn_type) =
-                                self.create_bn_type_from_idb(bv, &default, &x, &x.tinfo)
+                            if let Some(bn_type) = Self::create_bn_type_from_idb(bv, default, x, &x.tinfo)
                             {
                                 Ok((x.name.0.as_slice(), bn_type))
                             } else {
@@ -327,7 +292,7 @@ impl IDBParser {
                             .iter()
                             .map(|x| {
                                 if let Some(bn_type) =
-                                    self.create_bn_type_from_idb(bv, &unzip, &x, &x.tinfo)
+                                    Self::create_bn_type_from_idb(bv, &unzip, x, &x.tinfo)
                                 {
                                     Ok((x.name.0.as_slice(), bn_type))
                                 } else {
@@ -358,7 +323,7 @@ impl IDBParser {
     //                     .find(|ty| ty.name.clone().into_string() == name)
     //                 {
     //                     if let Some(bn_type) =
-    //                         self.create_bn_type_from_idb(bv, &default, &located, &located.tinfo)
+    //                         Self::create_bn_type_from_idb(bv, &default, &located, &located.tinfo)
     //                     {
     //                         Some((located.name.clone().into_string(), bn_type))
     //                     } else {
@@ -405,7 +370,7 @@ impl CustomDebugInfoParser for IDBParser {
                 }
             }
         }
-        return false;
+        false
     }
 }
 
@@ -437,7 +402,7 @@ impl CustomDebugInfoParser for TILParser {
                 }
             }
         }
-        return false;
+        false
     }
 }
 
