@@ -119,7 +119,8 @@ impl IDBParser {
                 }
             }
             Types::Function(fun) => {
-                if let Some(return_ty) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &fun.ret) {
+                if let Some(return_ty) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &fun.ret)
+                {
                     let mut vec = Vec::new();
                     for (t, str) in std::iter::zip(&fun.args, &tinfo.fields.0) {
                         if let Some(f) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &t.0) {
@@ -167,7 +168,6 @@ impl IDBParser {
                     Some(Type::named_type(
                         &binaryninja::types::NamedTypeReference::new(
                             NamedTypeReferenceClass::UnknownNamedTypeClass,
-                            "",
                             QualifiedName::from(tdef.name.as_str()),
                         ),
                     ))
@@ -187,16 +187,20 @@ impl IDBParser {
             }
             Types::Struct(str) => {
                 if str.is_ref {
-                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &str.ref_type.0).map(|ref_type| {
-                        Type::named_type_from_type(
-                            std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                            &ref_type,
-                        )
-                    })
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &str.ref_type.0).map(
+                        |ref_type| {
+                            Type::named_type_from_type(
+                                std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
+                                &ref_type,
+                            )
+                        },
+                    )
                 } else {
                     let structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&str.members, &tinfo.fields.0) {
-                        if let Some(mem) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0) {
+                        if let Some(mem) =
+                            Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
+                        {
                             structure.append(
                                 mem.as_ref(),
                                 name.as_str(),
@@ -211,17 +215,20 @@ impl IDBParser {
             }
             Types::Union(uni) => {
                 if uni.is_ref {
-                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &uni.ref_type.0)
-                        .map(|ref_type| {
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &uni.ref_type.0).map(
+                        |ref_type| {
                             Type::named_type_from_type(
                                 std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
                                 &ref_type,
                             )
-                        })
+                        },
+                    )
                 } else {
                     let structure = binaryninja::types::StructureBuilder::new();
                     for (member, name) in std::iter::zip(&uni.members, &tinfo.fields.0) {
-                        if let Some(mem) = Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0) {
+                        if let Some(mem) =
+                            Self::create_bn_type_from_idb(bv, bucket, tinfo, &member.0)
+                        {
                             structure.append(
                                 mem.as_ref(),
                                 name.as_str(),
@@ -237,12 +244,14 @@ impl IDBParser {
             }
             Types::Enum(enu) => {
                 if enu.is_ref {
-                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0).map(|ref_type| {
-                        binaryninja::types::Type::named_type_from_type(
-                            std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
-                            &ref_type,
-                        )
-                    })
+                    Self::create_bn_type_from_idb(bv, bucket, tinfo, &enu.ref_type.0).map(
+                        |ref_type| {
+                            binaryninja::types::Type::named_type_from_type(
+                                std::str::from_utf8(tinfo.name.0.as_slice()).unwrap(),
+                                &ref_type,
+                            )
+                        },
+                    )
                 } else {
                     let eb = binaryninja::types::EnumerationBuilder::new();
                     for (member, name) in std::iter::zip(&enu.members, &tinfo.fields.0) {
@@ -276,7 +285,8 @@ impl IDBParser {
                         .type_info
                         .iter()
                         .map(|x| {
-                            if let Some(bn_type) = Self::create_bn_type_from_idb(bv, default, x, &x.tinfo)
+                            if let Some(bn_type) =
+                                Self::create_bn_type_from_idb(bv, default, x, &x.tinfo)
                             {
                                 Ok((x.name.0.as_slice(), bn_type))
                             } else {
