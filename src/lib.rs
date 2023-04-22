@@ -360,13 +360,14 @@ impl CustomDebugInfoParser for IDBParser {
     fn parse_info(
         &self,
         debug_info: &mut DebugInfo,
-        bv: &BinaryView,
+        _bv: &BinaryView,
+        debug_file: &BinaryView,
         _progress: Box<dyn Fn(usize, usize) -> Result<(), ()>>,
     ) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.i64") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(idb) = IDB::parse_from_file(path) {
-                    if let Some(types) = self.parse_all_types(bv, &idb) {
+                    if let Some(types) = self.parse_all_types(debug_file, &idb) {
                         types.iter().for_each(|x| match x {
                             Ok((str, ty)) => {
                                 debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
@@ -392,13 +393,14 @@ impl CustomDebugInfoParser for TILParser {
     fn parse_info(
         &self,
         debug_info: &mut DebugInfo,
-        bv: &BinaryView,
+        _bv: &BinaryView,
+        debug_file: &BinaryView,
         _progress: Box<dyn Fn(usize, usize) -> Result<(), ()>>,
     ) -> bool {
         if let Some(idb_file) = get_open_filename_input("Select IDB", "*.til") {
             if let Ok(path) = idb_file.into_os_string().into_string() {
                 if let Ok(til) = TILSection::parse_from_file(path) {
-                    if let Some(types) = self.parse_all_types(bv, &til) {
+                    if let Some(types) = self.parse_all_types(debug_file, &til) {
                         types.iter().for_each(|x| match x {
                             Ok((str, ty)) => {
                                 debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
