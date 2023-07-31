@@ -1,3 +1,4 @@
 /target
 .idea
 Cargo.lock
+/idb_import_plugin.pdb
