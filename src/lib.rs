@@ -370,7 +370,7 @@ impl CustomDebugInfoParser for IDBParser {
                     if let Some(types) = self.parse_all_types(debug_file, &idb) {
                         types.iter().for_each(|x| match x {
                             Ok((str, ty)) => {
-                                debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
+                                debug_info.add_type(std::str::from_utf8(str).unwrap(), ty, &[]);
                             }
                             Err(err) => {
                                 error!("{}", err);
@@ -403,7 +403,7 @@ impl CustomDebugInfoParser for TILParser {
                     if let Some(types) = self.parse_all_types(debug_file, &til) {
                         types.iter().for_each(|x| match x {
                             Ok((str, ty)) => {
-                                debug_info.add_type(std::str::from_utf8(str).unwrap(), ty);
+                                debug_info.add_type(std::str::from_utf8(str).unwrap(), ty, &[]);
                             }
                             Err(err) => {
                                 error!("{}", err);
