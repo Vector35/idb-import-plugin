@@ -1,3 +1,5 @@
+#### ⚠️ DEPRECATED INCLUDED BY DEFAULT NOW https://github.com/Vector35/binaryninja-api/tree/dev/rust/examples/idb_import ⚠️
+
 # idb-import-plugin
 IDA Database Importer plugin for Binary Ninja written in Rust
 
